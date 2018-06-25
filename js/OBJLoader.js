@@ -1,3 +1,4 @@
+// threejs.org/license
 THREE.OBJLoader = ( function () {
 
 	// o object_name | g group_name
