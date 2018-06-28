@@ -34,19 +34,24 @@ class FirstPersonView {
 				// Hook pointer lock state change events
 				document.addEventListener('pointerlockchange', pointerlockchange, false );
 				document.addEventListener('mozpointerlockchange', pointerlockchange, false );
-				document.addEventListener('webkitpointerlockchange', pointerlockchange, false );
-
+                document.addEventListener('webkitpointerlockchange', pointerlockchange, false );
+                
 				document.addEventListener('pointerlockerror', pointerlockerror, false );
 				document.addEventListener('mozpointerlockerror', pointerlockerror, false );
-				document.addEventListener('webkitpointerlockerror', pointerlockerror, false );
+                document.addEventListener('webkitpointerlockerror', pointerlockerror, false );
+                
+                document.addEventListener('mousemove', this.onMouseMove, false );
+                document.addEventListener('click', function (event) {
+					// Ask the browser to lock the pointer
+					element.requestPointerLock = element.requestPointerLock || element.mozRequestPointerLock || element.webkitRequestPointerLock;
+                    element.requestPointerLock();
+                    this.active = true;
 
-				// Ask the browser to lock the pointer
-                element.requestPointerLock = element.requestPointerLock || element.mozRequestPointerLock || element.webkitRequestPointerLock;
-                element.requestPointerLock();
-                this.active = true;
+				}, false );
+               
 
 			} else {
-				instructions.innerHTML = "Your browser doesn't seem to support the Pointer Lock API";
+				alert("Browser doesn't seem to support the Pointer Lock API");
 
 			}
     }
@@ -60,30 +65,30 @@ class FirstPersonView {
     }
 
     onMouseMove(event) {
-        if(this.lastMouseTime !== null) {
+        if(this.lastMouseTime !== null && this.active) {
             let dt = event.timeStamp - this.lastMouseTime;
-            this.movementX = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
-            this.movementY = event.movementY || event.mozMovementY || event.webkitMovementY || 0;
-            this.yaw += 0.02 * this.movementX * dt;
-            this.pitch += 0.02 * this.movementY * dt;
+            if(dt){
+                this.movementX = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
+                this.movementY = event.movementY || event.mozMovementY || event.webkitMovementY || 0;
+                // Update yaw and pitch acording to mouse movement:
+                this.yaw += 0.02 * this.movementX * dt;
+                this.pitch += 0.02 * this.movementY * dt;
+               
+    
+                this.cosY = Math.cos(Math.toRadians(this.yaw));
+                this.cosP = Math.cos(Math.toRadians(this.pitch));
+                this.sinY = Math.sin(Math.toRadians(this.yaw));
+                this.sinP = Math.sin(Math.toRadians(this.pitch));
+                
+                // Set camera to look at point from the parametric equation of a sphere:
+                camera.lookAt(this.sinY * this.cosP, this.sinP, this.cosP - this.cosY);
+            }
         }
         else {
             this.lastMouseTime = event.timeStamp;
         }
 
         
-    }
-
-    update() {
-        this.cosY = Math.cos(Math.toRadians(this.yaw));
-        this.cosP = Math.cos(Math.toRadians(this.pitch));
-        this.sinY = Math.sin(Math.toRadians(this.yaw));
-        this.sinP = Math.sin(Math.toRadians(this.pitch));
-        
-        // From parametric equation of sphere:
-        camera.lookAt(sinY * cosP, sinP, cosP - cosY);
-        
-
     }
 
 }
