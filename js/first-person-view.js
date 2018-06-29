@@ -15,9 +15,16 @@ class FirstPersonView {
         this.sinP = Math.sin(Math.toRadians(this.pitch));
         this.active = false;
         this.lastMouseTime = null;
+        
+        let look_x = camera.position.x + (this.sinP * this.cosY);
+        let look_y = camera.position.y + this.sinP * this.sinY;
+        let look_z = camera.position.z + this.cosP;
+        this.forward = new THREE.Vector3(look_x, look_y, look_z);
+        this.forward = new THREE.Vector3();
     }
 
     activate() {
+        fpv = this;
         var havePointerLock = 'pointerLockElement' in document || 'mozPointerLockElement' in document || 'webkitPointerLockElement' in document;
 			if (havePointerLock) {
 				var element = document.body;
@@ -45,9 +52,12 @@ class FirstPersonView {
 					// Ask the browser to lock the pointer
 					element.requestPointerLock = element.requestPointerLock || element.mozRequestPointerLock || element.webkitRequestPointerLock;
                     element.requestPointerLock();
-                    this.active = true;
+                    fpv.active = true;
 
-				}, false );
+                }, false );
+                
+                document.addEventListener( 'keydown', this.onKeyDown, false );
+				document.addEventListener( 'keyup', this.onKeyUp, false );
                
 
 			} else {
@@ -64,31 +74,96 @@ class FirstPersonView {
         this.active = false;
     }
 
+    update(dt) {
+        if(fpv.moveForward) {
+            this.camera.position.addScaledVector(this.forward, 5000 * dt);
+            console.log(this.camera.position);
+        }
+        if(fpv.moveBackward) {
+            this.camera.position.addScaledVector(this.forward, 5000 *dt);
+        }
+    }
+
+    onKeyDown(event) {
+        switch ( event.keyCode ) {
+
+            case 38: // up
+            case 87: // w
+                fpv.moveForward = true;
+                break;
+
+            case 37: // left
+            case 65: // a
+                fpv.moveLeft = true; 
+                break;
+
+            case 40: // down
+            case 83: // s
+                fpv.moveBackward = true;
+                break;
+
+            case 39: // right
+            case 68: // d
+                fpv.moveRight = true;
+                break;
+
+        }
+    }
+
+    onKeyUp(event) {
+        switch ( event.keyCode ) {
+            case 38: // up
+            case 87: // w
+                fpv.moveForward = false;
+                break;
+
+            case 37: // left
+            case 65: // a
+                fpv.moveLeft = false; 
+                break;
+
+            case 40: // down
+            case 83: // s
+                fpv.moveBackward = false;
+                break;
+
+            case 39: // right
+            case 68: // d
+                fpv.moveRight = false;
+                break;
+
+        }
+    }
+
     onMouseMove(event) {
-        if(this.lastMouseTime !== null && this.active) {
-            let dt = event.timeStamp - this.lastMouseTime;
+        if(fpv.lastMouseTime !== null && fpv.active) {
+            let dt = event.timeStamp - fpv.lastMouseTime;
             if(dt){
-                this.movementX = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
-                this.movementY = event.movementY || event.mozMovementY || event.webkitMovementY || 0;
+                fpv.movementX = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
+                fpv.movementY = event.movementY || event.mozMovementY || event.webkitMovementY || 0;
                 // Update yaw and pitch acording to mouse movement:
-                this.yaw += 0.02 * this.movementX * dt;
-                this.pitch += 0.02 * this.movementY * dt;
-               
-    
-                this.cosY = Math.cos(Math.toRadians(this.yaw));
-                this.cosP = Math.cos(Math.toRadians(this.pitch));
-                this.sinY = Math.sin(Math.toRadians(this.yaw));
-                this.sinP = Math.sin(Math.toRadians(this.pitch));
+                fpv.yaw += 0.000002 * fpv.movementX * dt;
+                fpv.yaw %= 360;
+                fpv.pitch += 0.000002 * fpv.movementY * dt;
+                fpv.pitch %= 180;
                 
-                // Set camera to look at point from the parametric equation of a sphere:
-                camera.lookAt(this.sinY * this.cosP, this.sinP, this.cosP - this.cosY);
+
+                fpv.cosY = Math.cos(Math.toRadians(fpv.yaw));
+                fpv.cosP = Math.cos(Math.toRadians(fpv.pitch));
+                fpv.sinY = Math.sin(Math.toRadians(fpv.yaw));
+                fpv.sinP = Math.sin(Math.toRadians(fpv.pitch));
+
+                let look_x = camera.position.x + (fpv.sinP * fpv.cosY);
+                let look_y = camera.position.y + fpv.sinP * fpv.sinY;
+                let look_z = camera.position.z + fpv.cosP;
+                this.forward = new THREE.Vector3(look_x, look_y, look_z);
+
+                //camera.lookAt(this.forward);
             }
         }
         else {
-            this.lastMouseTime = event.timeStamp;
+            fpv.lastMouseTime = event.timeStamp;
         }
-
-        
     }
 
 }

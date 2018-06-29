@@ -1,5 +1,8 @@
 var container;
 var camera, scene, renderer;
+var fpv;
+var prevTime;
+var barrels = [];
 
 init();
 animate();
@@ -10,7 +13,6 @@ function init() {
 	camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 2000);
 	camera.position.z = 15;
 	camera.position.y = 15;
-	
 	
 	scene = new THREE.Scene();
 	var ambientLight = new THREE.AmbientLight(0xcccccc, 0.4);
@@ -37,6 +39,7 @@ function init() {
 	var onError = function (xhr) {
 	};
 	var loader = new THREE.OBJLoader(manager);
+
 	loader.load('models/barrel.obj', function (object) {
 		object.traverse(function (child) {
 			if ( child instanceof THREE.Mesh ) {
@@ -44,15 +47,28 @@ function init() {
 			}
 		} );
 		scene.add(object);
-		camera.lookAt(object.position);
-	}, onProgress, onError);
-
+		barrels.push(object);
+		for(var i = -10; i < 10; i++) {
+			for(var j = -10; j < 10; j++) {
+				if(!(i == 0 && j == 0)) {
+					var new_barrel = barrels[0].clone();
+					new_barrel.position.x = i;
+					new_barrel.position.z = j;
+					scene.add(new_barrel);
+					barrels.push(new_barrel);
+				}
+			}
+		}
+	});
+	
 	renderer = new THREE.WebGLRenderer();
 	renderer.setPixelRatio(window.devicePixelRatio);
 	renderer.setSize(window.innerWidth, window.innerHeight);
 	container.appendChild(renderer.domElement);
 
 	window.addEventListener('resize', onWindowResize, false);
+
+	camera.lookAt(0.0, 0.0, 0.0);
 }
 function onWindowResize() {
 	camera.aspect = window.innerWidth / window.innerHeight;
@@ -61,6 +77,11 @@ function onWindowResize() {
 }
 function animate() {
 	requestAnimationFrame(animate);
+	var time = performance.now();
+	var dt = (time - prevTime) / 1000.0;
+	fpv.update(dt);
+	prevTime = time;
+
 	render();
 }
 function render() {
