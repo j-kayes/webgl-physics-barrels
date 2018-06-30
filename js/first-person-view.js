@@ -8,24 +8,25 @@ class FirstPersonView {
     constructor(camera) {
         this.camera = camera;
         this.yaw = 0.0;
-        this.pitch = 0.0;
+        this.pitch = 40.0;
         this.cosY = Math.cos(Math.toRadians(this.yaw));
         this.cosP = Math.cos(Math.toRadians(this.pitch));
         this.sinY = Math.sin(Math.toRadians(this.yaw));
         this.sinP = Math.sin(Math.toRadians(this.pitch));
         this.active = false;
         this.lastMouseTime = null;
-        this.camSpeed = 5.0;
         
-        let look_x = camera.position.x + (this.sinP * this.cosY);
-        let look_y = camera.position.y + this.sinP * this.sinY;
-        let look_z = camera.position.z + this.cosP;
+        this.lookAt = new THREE.Vector3();
+        this.lookAt.x = camera.position.x + this.cosP * this.sinY;
+        this.lookAt.y = camera.position.y - this.sinP;
+        this.lookAt.z = camera.position.z - (this.cosP *this.cosY);
 
-        this.lookAt = new THREE.Vector3(look_x, look_y, look_z);
         this.forward = new THREE.Vector3().subVectors(this.lookAt, this.camera.position).normalize();
         this.left = new THREE.Vector3().crossVectors(new THREE.Vector3(0, 1, 0), this.forward).normalize();
 
         this.camera.lookAt(this.lookAt);
+        this.camSpeed = 5.0;
+        this.lookSensitivity = 0.00000275;
     }
 
     activate() {
@@ -137,19 +138,23 @@ class FirstPersonView {
                 fpv.movementX = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
                 fpv.movementY = event.movementY || event.mozMovementY || event.webkitMovementY || 0;
                 // Update yaw and pitch acording to mouse movement:
-                fpv.yaw += 0.000002 * fpv.movementX * dt;
+                fpv.yaw += fpv.lookSensitivity * fpv.movementX * dt;
                 fpv.yaw %= 360;
-                fpv.pitch += 0.000002 * fpv.movementY * dt;
+                fpv.pitch += fpv.lookSensitivity * fpv.movementY * dt;
                 fpv.pitch %= 180;
-                
+
                 fpv.cosY = Math.cos(Math.toRadians(fpv.yaw));
                 fpv.cosP = Math.cos(Math.toRadians(fpv.pitch));
                 fpv.sinY = Math.sin(Math.toRadians(fpv.yaw));
                 fpv.sinP = Math.sin(Math.toRadians(fpv.pitch));
 
-                fpv.lookAt.x = fpv.camera.position.x + (fpv.sinP * fpv.cosY);
-                fpv.lookAt.y = fpv.camera.position.y + fpv.sinP * fpv.sinY;
-                fpv.lookAt.z = fpv.camera.position.z + fpv.cosP;
+                /*/ The 'lookat' vector is updated to point towards a point on the unit sphere 
+                    surrounding the camera acording to the yaw and pitch angles above.
+                    This can be calculated by hand with trigonometry.
+                */
+                fpv.lookAt.x = camera.position.x + fpv.cosP * fpv.sinY;
+                fpv.lookAt.y = camera.position.y - fpv.sinP;
+                fpv.lookAt.z = camera.position.z - (fpv.cosP * fpv.cosY);
 
                 fpv.forward.subVectors(fpv.lookAt, fpv.camera.position).normalize();
                 fpv.left.crossVectors(new THREE.Vector3(0, 1, 0), fpv.forward).normalize();
