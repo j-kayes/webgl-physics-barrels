@@ -30,14 +30,6 @@ function init() {
 	var textureLoader = new THREE.TGALoader(manager);
 	var texture = textureLoader.load('models/textures/barrel.tga');
 
-	var onProgress = function (xhr) {
-	if (xhr.lengthComputable) {
-		var percentComplete = xhr.loaded / xhr.total * 100;
-		console.log(Math.round(percentComplete, 2) + '% downloaded');
-	}
-	};
-	var onError = function (xhr) {
-	};
 	var loader = new THREE.OBJLoader(manager);
 
 	loader.load('models/barrel.obj', function (object) {
@@ -68,7 +60,6 @@ function init() {
 
 	window.addEventListener('resize', onWindowResize, false);
 
-	camera.lookAt(0.0, 0.0, 0.0);
 }
 function onWindowResize() {
 	camera.aspect = window.innerWidth / window.innerHeight;

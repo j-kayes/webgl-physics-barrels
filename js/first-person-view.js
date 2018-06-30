@@ -15,12 +15,17 @@ class FirstPersonView {
         this.sinP = Math.sin(Math.toRadians(this.pitch));
         this.active = false;
         this.lastMouseTime = null;
+        this.camSpeed = 5.0;
         
         let look_x = camera.position.x + (this.sinP * this.cosY);
         let look_y = camera.position.y + this.sinP * this.sinY;
         let look_z = camera.position.z + this.cosP;
-        this.forward = new THREE.Vector3(look_x, look_y, look_z);
-        this.forward = new THREE.Vector3();
+
+        this.lookAt = new THREE.Vector3(look_x, look_y, look_z);
+        this.forward = new THREE.Vector3().subVectors(this.lookAt, this.camera.position).normalize();
+        this.left = new THREE.Vector3().crossVectors(new THREE.Vector3(0, 1, 0), this.forward).normalize();
+
+        this.camera.lookAt(this.lookAt);
     }
 
     activate() {
@@ -74,16 +79,6 @@ class FirstPersonView {
         this.active = false;
     }
 
-    update(dt) {
-        if(fpv.moveForward) {
-            this.camera.position.addScaledVector(this.forward, 5000 * dt);
-            console.log(this.camera.position);
-        }
-        if(fpv.moveBackward) {
-            this.camera.position.addScaledVector(this.forward, 5000 *dt);
-        }
-    }
-
     onKeyDown(event) {
         switch ( event.keyCode ) {
 
@@ -134,7 +129,7 @@ class FirstPersonView {
 
         }
     }
-
+    // Have to use fpv value in place of 'this' as the reference changes due to this being a browser event:
     onMouseMove(event) {
         if(fpv.lastMouseTime !== null && fpv.active) {
             let dt = event.timeStamp - fpv.lastMouseTime;
@@ -147,23 +142,40 @@ class FirstPersonView {
                 fpv.pitch += 0.000002 * fpv.movementY * dt;
                 fpv.pitch %= 180;
                 
-
                 fpv.cosY = Math.cos(Math.toRadians(fpv.yaw));
                 fpv.cosP = Math.cos(Math.toRadians(fpv.pitch));
                 fpv.sinY = Math.sin(Math.toRadians(fpv.yaw));
                 fpv.sinP = Math.sin(Math.toRadians(fpv.pitch));
 
-                let look_x = camera.position.x + (fpv.sinP * fpv.cosY);
-                let look_y = camera.position.y + fpv.sinP * fpv.sinY;
-                let look_z = camera.position.z + fpv.cosP;
-                this.forward = new THREE.Vector3(look_x, look_y, look_z);
+                fpv.lookAt.x = fpv.camera.position.x + (fpv.sinP * fpv.cosY);
+                fpv.lookAt.y = fpv.camera.position.y + fpv.sinP * fpv.sinY;
+                fpv.lookAt.z = fpv.camera.position.z + fpv.cosP;
 
-                //camera.lookAt(this.forward);
+                fpv.forward.subVectors(fpv.lookAt, fpv.camera.position).normalize();
+                fpv.left.crossVectors(new THREE.Vector3(0, 1, 0), fpv.forward).normalize();
+
+                fpv.camera.lookAt(fpv.lookAt);
             }
         }
         else {
             fpv.lastMouseTime = event.timeStamp;
         }
     }
+
+    update(dt) {
+        if(fpv.moveForward) {
+            this.camera.position.addScaledVector(this.forward, this.camSpeed * dt);
+        }
+        if(fpv.moveBackward) {
+            this.camera.position.addScaledVector(this.forward, -this.camSpeed *dt);
+        }
+        if(fpv.moveLeft) {
+            this.camera.position.addScaledVector(this.left, this.camSpeed *dt);
+        }
+        if(fpv.moveRight) {
+            this.camera.position.addScaledVector(this.left, -this.camSpeed *dt);
+        }
+    }
+
 
 }
