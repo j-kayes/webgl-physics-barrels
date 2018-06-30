@@ -26,7 +26,7 @@ class FirstPersonView {
 
         this.camera.lookAt(this.lookAt);
         this.camSpeed = 5.0;
-        this.lookSensitivity = 0.00000275;
+        this.lookSensitivity = 0.000003;
     }
 
     activate() {
@@ -141,7 +141,7 @@ class FirstPersonView {
                 fpv.yaw += fpv.lookSensitivity * fpv.movementX * dt;
                 fpv.yaw %= 360;
                 fpv.pitch += fpv.lookSensitivity * fpv.movementY * dt;
-                fpv.pitch %= 180;
+                fpv.pitch %= 360;
 
                 fpv.cosY = Math.cos(Math.toRadians(fpv.yaw));
                 fpv.cosP = Math.cos(Math.toRadians(fpv.pitch));
