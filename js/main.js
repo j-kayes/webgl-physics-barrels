@@ -5,6 +5,7 @@ var prevTime;
 var barrels = []; 
 var balls = [];
 var ballMeshes= [];
+document.threeClock = new THREE.Clock(true);
 
 init();
 animate();
@@ -20,7 +21,8 @@ function init() {
 	camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 2000);
 	camera.position.z = 15;
 	camera.position.y = 15;
-	
+
+
 	// Setting up cannon physics:
 	world = new CANNON.World();
 	world.quatNormalizeSkip = 0;
@@ -74,9 +76,11 @@ function init() {
 	
 	// THREE.js scene:
 	scene = new THREE.Scene();
-	var ambientLight = new THREE.AmbientLight(0xcccccc, 0.4);
+
+	var ambientLight = new THREE.AmbientLight(0xc8a9a9, 0.08);
 	scene.add(ambientLight);
-	var pointLight = new THREE.PointLight(0xffffff, 0.8);
+
+	var pointLight = new THREE.PointLight(0xffffff, 0.9, 0, 2);
 	camera.add(pointLight);
 	scene.add(camera);
 	fpv = new FirstPersonView(camera);
@@ -90,6 +94,7 @@ function init() {
 
 	var loader = new THREE.OBJLoader(manager);
 
+	// Barrels:
 	loader.load('models/barrel.obj', function (object) {
 		object.traverse(function (child) {
 			if (child instanceof THREE.Mesh) {
@@ -111,11 +116,14 @@ function init() {
 		}
 	});
 	
-	// Floor:
+	// Floor graphics:
 	var textureLoader = new THREE.TextureLoader(manager);
 	floorTexture = textureLoader.load('models/textures/wood.jpg');
+	floorTexture.wrapS = THREE.RepeatWrapping;
+	floorTexture.wrapT = THREE.RepeatWrapping;
+	floorTexture.repeat.set(16, 16);
 
-	floorGeometry = new THREE.PlaneGeometry(300, 300, 1, 1);
+	floorGeometry = new THREE.PlaneGeometry(320, 320, 1, 1);
 	floorGeometry.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI/2));
 
 	floorMaterial = new THREE.MeshPhongMaterial({ map: floorTexture });
@@ -124,13 +132,13 @@ function init() {
 	floorMesh.receiveShadow = true;
 	scene.add(floorMesh);
 	
+	// Projectile:
 	var ballMaterial = new THREE.MeshLambertMaterial({color: 0x0000FF});
 	var ballShape = new CANNON.Sphere(0.2);
 	var ballGeometry = new THREE.SphereGeometry(ballShape.radius, 32, 32);
 	var shootDirection = new THREE.Vector3(fpv.forward);
 	var shootVelo = 15;
 	
-	var fpvActive = false;
 	window.addEventListener('resize', onWindowResize, false);
 	document.addEventListener('click', function (event) {
 		if(fpv.active == true) {
@@ -151,7 +159,6 @@ function init() {
 									shootDirection.y * shootVelo,
 									shootDirection.z * shootVelo);
 
-			// Move the ball outside the player sphere
 			x += shootDirection.x * (sphereShape.radius*1.02 + ballShape.radius);
 			y += shootDirection.y * (sphereShape.radius*1.02 + ballShape.radius);
 			z += shootDirection.z * (sphereShape.radius*1.02 + ballShape.radius);
@@ -161,7 +168,7 @@ function init() {
 		else {
 			document.getElementById("instructions").style.display = "none";
 			document.getElementById("blocker").style.display = "none";
-			fpvActive = true;
+			fpv.activate();
 		}
 	}, false );
 

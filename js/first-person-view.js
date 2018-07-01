@@ -26,14 +26,14 @@ class FirstPersonView {
 
         this.camera.lookAt(this.lookAt);
         this.camSpeed = 5.0;
-        this.lookSensitivity = 0.00001;
+        this.lookSensitivity = 0.68;
         fpv = this;
     }
 
     activate() {
         var havePointerLock = 'pointerLockElement' in document || 'mozPointerLockElement' in document || 'webkitPointerLockElement' in document;
 			if (havePointerLock) {
-				var element = document.body;
+			    var element = document.body;
 
 				var pointerlockchange = function (event) {
 
@@ -54,17 +54,14 @@ class FirstPersonView {
                 document.addEventListener('webkitpointerlockerror', pointerlockerror, false );
                 
                 document.addEventListener('mousemove', this.onMouseMove, false );
-                document.addEventListener('click', function (event) {
-					// Ask the browser to lock the pointer
-					element.requestPointerLock = element.requestPointerLock || element.mozRequestPointerLock || element.webkitRequestPointerLock;
-                    element.requestPointerLock();
-                    fpv.active = true;
-
-                }, false );
+                
+                // Ask the browser to lock the pointer
+				element.requestPointerLock = element.requestPointerLock || element.mozRequestPointerLock || element.webkitRequestPoin-Lock;
+                element.requestPointerLock();
                 
                 document.addEventListener( 'keydown', this.onKeyDown, false );
 				document.addEventListener( 'keyup', this.onKeyUp, false );
-               
+                this.active = true;
 
 			} else {
 				alert("Browser doesn't seem to support the Pointer Lock API");
@@ -105,8 +102,7 @@ class FirstPersonView {
             case 27: // esc
                 fpv.deactivate();
                 break;
-
-
+ 
         }
     }
 
@@ -136,9 +132,9 @@ class FirstPersonView {
     }
     // Have to use fpv value in place of 'this' as the reference changes due to this being a browser event:
     onMouseMove(event) {
-        if(fpv.lastMouseTime !== null && fpv.active && ) {
-            let dt = event.timeStamp - fpv.lastMouseTime;
-            if(dt){
+        if(fpv.lastMouseTime !== null && fpv.active) {
+            let dt = document.threeClock.getDelta();
+            if(dt) {
                 fpv.movementX = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
                 fpv.movementY = event.movementY || event.mozMovementY || event.webkitMovementY || 0;
                 // Update yaw and pitch acording to mouse movement:
@@ -185,6 +181,4 @@ class FirstPersonView {
             this.camera.position.addScaledVector(this.left, -this.camSpeed * dt);
         }
     }
-
-
 }
