@@ -26,11 +26,11 @@ class FirstPersonView {
 
         this.camera.lookAt(this.lookAt);
         this.camSpeed = 5.0;
-        this.lookSensitivity = 0.000003;
+        this.lookSensitivity = 0.00001;
+        fpv = this;
     }
 
     activate() {
-        fpv = this;
         var havePointerLock = 'pointerLockElement' in document || 'mozPointerLockElement' in document || 'webkitPointerLockElement' in document;
 			if (havePointerLock) {
 				var element = document.body;
@@ -81,8 +81,7 @@ class FirstPersonView {
     }
 
     onKeyDown(event) {
-        switch ( event.keyCode ) {
-
+        switch (event.keyCode) {
             case 38: // up
             case 87: // w
                 fpv.moveForward = true;
@@ -102,6 +101,11 @@ class FirstPersonView {
             case 68: // d
                 fpv.moveRight = true;
                 break;
+
+            case 27: // esc
+                fpv.deactivate();
+                break;
+
 
         }
     }
@@ -132,7 +136,7 @@ class FirstPersonView {
     }
     // Have to use fpv value in place of 'this' as the reference changes due to this being a browser event:
     onMouseMove(event) {
-        if(fpv.lastMouseTime !== null && fpv.active) {
+        if(fpv.lastMouseTime !== null && fpv.active && ) {
             let dt = event.timeStamp - fpv.lastMouseTime;
             if(dt){
                 fpv.movementX = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
@@ -172,13 +176,13 @@ class FirstPersonView {
             this.camera.position.addScaledVector(this.forward, this.camSpeed * dt);
         }
         if(fpv.moveBackward) {
-            this.camera.position.addScaledVector(this.forward, -this.camSpeed *dt);
+            this.camera.position.addScaledVector(this.forward, -this.camSpeed * dt);
         }
         if(fpv.moveLeft) {
-            this.camera.position.addScaledVector(this.left, this.camSpeed *dt);
+            this.camera.position.addScaledVector(this.left, this.camSpeed * dt);
         }
         if(fpv.moveRight) {
-            this.camera.position.addScaledVector(this.left, -this.camSpeed *dt);
+            this.camera.position.addScaledVector(this.left, -this.camSpeed * dt);
         }
     }
 

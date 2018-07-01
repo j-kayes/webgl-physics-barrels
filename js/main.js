@@ -2,11 +2,12 @@ var container;
 var camera, scene, renderer;
 var fpv;
 var prevTime;
-var barrels = [];
+var barrels = []; 
+var balls = [];
+var ballMeshes= [];
 
 init();
 animate();
-
 function init() {
 	container = document.createElement('div');
 	document.body.appendChild(container);
@@ -54,6 +55,15 @@ function init() {
                                                         );
     // We must add the contact materials to the world
     world.addContactMaterial(physicsContactMaterial);
+	
+	// Sphere projectile physics:
+	var mass = 5, radius = 1.3;
+	sphereShape = new CANNON.Sphere(radius);
+	sphereBody = new CANNON.Body({ mass: mass });
+	sphereBody.addShape(sphereShape);
+	sphereBody.position.set(0,5,0);
+	sphereBody.linearDamping = 0.9;
+	world.add(sphereBody);
 
     // Ground physics:
     var groundShape = new CANNON.Plane();
@@ -70,7 +80,6 @@ function init() {
 	camera.add(pointLight);
 	scene.add(camera);
 	fpv = new FirstPersonView(camera);
-	fpv.activate();
 
 	var manager = new THREE.LoadingManager();
 	manager.onProgress = function (item, loaded, total) {
@@ -106,8 +115,8 @@ function init() {
 	var textureLoader = new THREE.TextureLoader(manager);
 	floorTexture = textureLoader.load('models/textures/wood.jpg');
 
-	floorGeometry = new THREE.PlaneGeometry(300, 300, 50, 50);
-	floorGeometry.applyMatrix(new THREE.Matrix4().makeRotationX(Math.PI/2));
+	floorGeometry = new THREE.PlaneGeometry(300, 300, 1, 1);
+	floorGeometry.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI/2));
 
 	floorMaterial = new THREE.MeshPhongMaterial({ map: floorTexture });
 
@@ -121,10 +130,10 @@ function init() {
 	var shootDirection = new THREE.Vector3(fpv.forward);
 	var shootVelo = 15;
 	
-	document.controlsEnabled = false;
+	var fpvActive = false;
 	window.addEventListener('resize', onWindowResize, false);
 	document.addEventListener('click', function (event) {
-		if(this.controlsEnabled==true){
+		if(fpv.active == true) {
 			var x = sphereBody.position.x;
 			var y = sphereBody.position.y;
 			var z = sphereBody.position.z;
@@ -138,7 +147,7 @@ function init() {
 			balls.push(ballBody);
 			ballMeshes.push(ballMesh);
 			shootDirection = fpv.forward;
-			ballBody.velocity.set(  shootDirection.x * shootVelo,
+			ballBody.velocity.set(shootDirection.x * shootVelo,
 									shootDirection.y * shootVelo,
 									shootDirection.z * shootVelo);
 
@@ -152,7 +161,7 @@ function init() {
 		else {
 			document.getElementById("instructions").style.display = "none";
 			document.getElementById("blocker").style.display = "none";
-			this.controlsEnabled = true;
+			fpvActive = true;
 		}
 	}, false );
 
@@ -172,6 +181,5 @@ function animate() {
 	render();
 }
 function render() {
-	
 	renderer.render(scene, camera);
 }
