@@ -4,8 +4,9 @@ var fpv;
 var prevTime;
 var barrels = []; 
 var balls = [];
-var ballMeshes= [];
 document.threeClock = new THREE.Clock(true);
+var fixedTimeStep = 1.0 / 60.0; // seconds
+var maxSubSteps = 3;
 
 init();
 animate();
@@ -25,53 +26,28 @@ function init() {
 
 	// Setting up cannon physics:
 	world = new CANNON.World();
-	world.quatNormalizeSkip = 0;
-	world.quatNormalizeFast = false;
+	//world.quatNormalizeSkip = 0;
+	//world.quatNormalizeFast = false;
 	
-	var solver = new CANNON.GSSolver();
-	
-	world.defaultContactMaterial.contactEquationStiffness = 1e9;
-	world.defaultContactMaterial.contactEquationRelaxation = 4;
-	
-	solver.iterations = 7;
-	solver.tolerance = 0.1;
-	var split = true;
-	if(split) {
-		world.solver = new CANNON.SplitSolver(solver);
-	}
-	else {
-		world.solver = solver;
-	
-		world.gravity.set(0, -20, 0);
-		world.broadphase = new CANNON.NaiveBroadphase();
-	}
-	world.gravity.set(0,-20,0);
-	world.broadphase = new CANNON.NaiveBroadphase();
+	//world.defaultContactMaterial.contactEquationStiffness = 1e9;
+	//world.defaultContactMaterial.contactEquationRelaxation = 4;
 
-    // Create a slippery material (friction coefficient = 0.0)
+	world.gravity.set(0, -18, 0);
+
     physicsMaterial = new CANNON.Material("slipperyMaterial");
     var physicsContactMaterial = new CANNON.ContactMaterial(physicsMaterial,
-                                                        physicsMaterial,
-                                                        0.0, // friction coefficient
-                                                        0.3  // restitution
-                                                        );
+                                                    physicsMaterial,
+                                                    0.0, // friction coefficient
+                                                    0.9  // restitution
+                                                    );
     // We must add the contact materials to the world
     world.addContactMaterial(physicsContactMaterial);
-	
-	// Sphere projectile physics:
-	var mass = 5, radius = 1.3;
-	sphereShape = new CANNON.Sphere(radius);
-	sphereBody = new CANNON.Body({ mass: mass });
-	sphereBody.addShape(sphereShape);
-	sphereBody.position.set(0,5,0);
-	sphereBody.linearDamping = 0.9;
-	world.add(sphereBody);
 
     // Ground physics:
     var groundShape = new CANNON.Plane();
-    var groundBody = new CANNON.Body({mass: 0});
+    var groundBody = new CANNON.Body({mass: 0, material: physicsContactMaterial});
     groundBody.addShape(groundShape);
-	groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1,0,0),Math.PI/2);
+	groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1,0,0), -Math.PI/2);
 	world.add(groundBody);
 	
 	// THREE.js scene:
@@ -95,6 +71,7 @@ function init() {
 	var loader = new THREE.OBJLoader(manager);
 
 	// Barrels:
+	var ballBody = new CANNON.Body({mass: 5, shape: ballShape, position: new CANNON.Vec3(x, y, z), material: physicsContactMaterial});
 	loader.load('models/barrel.obj', function (object) {
 		object.traverse(function (child) {
 			if (child instanceof THREE.Mesh) {
@@ -132,38 +109,38 @@ function init() {
 	floorMesh.receiveShadow = true;
 	scene.add(floorMesh);
 	
-	// Projectile:
-	var ballMaterial = new THREE.MeshLambertMaterial({color: 0x0000FF});
-	var ballShape = new CANNON.Sphere(0.2);
-	var ballGeometry = new THREE.SphereGeometry(ballShape.radius, 32, 32);
-	var shootDirection = new THREE.Vector3(fpv.forward);
-	var shootVelo = 15;
-	
 	window.addEventListener('resize', onWindowResize, false);
+
+	// Projectile data:
+	var ballMaterial = new THREE.MeshLambertMaterial({color: 0xCCCCCC});
+	var ballShape = new CANNON.Sphere(0.5);
+	var ballGeometry = new THREE.SphereGeometry(ballShape.radius, 32, 32);
+	var shootSpeed = 10;
+
+	// Projectile shooting:
 	document.addEventListener('click', function (event) {
 		if(fpv.active == true) {
-			var x = sphereBody.position.x;
-			var y = sphereBody.position.y;
-			var z = sphereBody.position.z;
-			var ballBody = new CANNON.Body({mass: 1});
-			ballBody.addShape(ballShape);
-			var ballMesh = new THREE.Mesh(ballGeometry, ballMaterial);
+			var x = camera.position.x;
+			var y = camera.position.y;
+			var z = camera.position.z;
+			// Just in front of the camera:
+			x += fpv.forward.x * (2.02*ballShape.radius);
+			y += fpv.forward.y * (2.02*ballShape.radius);
+			z += fpv.forward.z * (2.02*ballShape.radius);
+			var ballBody = new CANNON.Body({mass: 5, shape: ballShape, position: new CANNON.Vec3(x, y, z), material: physicsContactMaterial}); // Physics object
+
+			var ballMesh = new THREE.Mesh(ballGeometry, ballMaterial); 
 			world.add(ballBody);
-			scene.add(ballMesh);
+			scene.add(ballMesh);  
+
 			ballMesh.castShadow = true;
 			ballMesh.receiveShadow = true;
-			balls.push(ballBody);
-			ballMeshes.push(ballMesh);
-			shootDirection = fpv.forward;
-			ballBody.velocity.set(shootDirection.x * shootVelo,
-									shootDirection.y * shootVelo,
-									shootDirection.z * shootVelo);
+			balls.push({mesh: ballMesh, physicsObject: ballBody});
 
-			x += shootDirection.x * (sphereShape.radius*1.02 + ballShape.radius);
-			y += shootDirection.y * (sphereShape.radius*1.02 + ballShape.radius);
-			z += shootDirection.z * (sphereShape.radius*1.02 + ballShape.radius);
+			ballBody.velocity.set(fpv.forward.x * shootSpeed, fpv.forward.y * shootSpeed, fpv.forward.z * shootSpeed);
+
 			ballBody.position.set(x,y,z);
-			ballMesh.position.set(x,y,z);
+			ballMesh.position.copy(ballBody.position);
 		}
 		else {
 			document.getElementById("instructions").style.display = "none";
@@ -178,14 +155,24 @@ function onWindowResize() {
 	camera.updateProjectionMatrix();
 	renderer.setSize( window.innerWidth, window.innerHeight );
 }
+var first = false;
 function animate() {
 	requestAnimationFrame(animate);
 	var time = performance.now();
 	var dt = (time - prevTime) / 1000.0;
+	world.step(fixedTimeStep, dt, maxSubSteps);
 	fpv.update(dt);
-	prevTime = time;
-
+	for(var i = 0; i < balls.length; i++) {
+		balls[i].mesh.position.copy(balls[i].physicsObject.position);
+		if(!first) {
+			console.log(balls[i].mesh.position);
+			first = true;
+		}
+	}
+	
 	render();
+
+	prevTime = time;
 }
 function render() {
 	renderer.render(scene, camera);

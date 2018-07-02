@@ -26,7 +26,8 @@ class FirstPersonView {
 
         this.camera.lookAt(this.lookAt);
         this.camSpeed = 5.0;
-        this.lookSensitivity = 0.68;
+        this.camFastSpeed = 8.0;
+        this.lookSensitivity = 0.75;
         fpv = this;
     }
 
